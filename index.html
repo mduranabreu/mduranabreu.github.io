@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Visor molecular 3D</title>
+  <script src="https://3Dmol.org/build/3Dmol-min.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f7f7f7;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    header {
+      text-align: center;
+      padding: 12px;
+      background: #ffffff;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      z-index: 10;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 1.1rem;
+    }
+
+    #viewer {
+      flex: 1;
+      width: 100%;
+    }
+
+    .controls {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      padding: 10px;
+      background: white;
+      flex-wrap: wrap;
+      box-shadow: 0 -2px 8px rgba(0,0,0,0.08);
+    }
+
+    button {
+      padding: 10px 14px;
+      border: none;
+      border-radius: 10px;
+      background: #2d6cdf;
+      color: white;
+      font-size: 0.95rem;
+      cursor: pointer;
+    }
+
+    button:hover {
+      opacity: 0.9;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1 id="title">Visor molecular 3D</h1>
+  </header>
+
+  <div id="viewer"></div>
+
+  <div class="controls">
+    <button onclick="setBallStick()">Ball & Stick</button>
+    <button onclick="setStick()">Stick</button>
+    <button onclick="setSphere()">Space Filling</button>
+    <button onclick="resetView()">Reset</button>
+  </div>
+
+  <script>
+    let viewer = null;
+    let model = null;
+
+    function getQueryParam(name) {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get(name);
+    }
+
+    function getFileExtension(filename) {
+      return filename.split('.').pop().toLowerCase();
+    }
+
+    function getFormat(ext) {
+      const map = {
+        xyz: "xyz",
+        mol: "mol",
+        sdf: "sdf",
+        pdb: "pdb"
+      };
+      return map[ext] || null;
+    }
+
+    function getFileName(path) {
+      return path.split('/').pop();
+    }
+
+    async function loadMolecule() {
+      const file = getQueryParam("file");
+
+      if (!file) {
+        alert("No se ha indicado ningún archivo. Usa ?file=moleculas/archivo.xyz");
+        return;
+      }
+
+      const ext = getFileExtension(file);
+      const format = getFormat(ext);
+
+      if (!format) {
+        alert("Formato no soportado: " + ext);
+        return;
+      }
+
+      document.getElementById("title").innerText = getFileName(file);
+
+      const element = document.getElementById("viewer");
+      viewer = $3Dmol.createViewer(element, { backgroundColor: "white" });
+
+      try {
+        const response = await fetch(file);
+        const data = await response.text();
+
+        model = viewer.addModel(data, format);
+
+        viewer.setStyle({}, { stick: {}, sphere: { scale: 0.28 } });
+        viewer.zoomTo();
+        viewer.render();
+      } catch (error) {
+        console.error("Error cargando la molécula:", error);
+        alert("No se pudo cargar el archivo molecular.");
+      }
+    }
+
+    function setBallStick() {
+      viewer.setStyle({}, { stick: {}, sphere: { scale: 0.28 } });
+      viewer.render();
+    }
+
+    function setStick() {
+      viewer.setStyle({}, { stick: { radius: 0.18 } });
+      viewer.render();
+    }
+
+    function setSphere() {
+      viewer.setStyle({}, { sphere: {} });
+      viewer.render();
+    }
+
+    function resetView() {
+      viewer.zoomTo();
+      viewer.render();
+    }
+
+    loadMolecule();
+  </script>
+
+</body>
+</html>
